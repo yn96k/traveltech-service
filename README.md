@@ -23,7 +23,7 @@
 
 ### [User Stories](https://github.com/yn96k/traveltech-service/blob/main/User%20Stories.md)
 
-### Use Cases
+### [Use Cases](https://github.com/yn96k/traveltech-service/blob/main/Use%20Cases.md)
 
 ### C4-диаграмма
 
