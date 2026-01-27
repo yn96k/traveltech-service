@@ -25,9 +25,11 @@
 
 ### [Use Cases](https://github.com/yn96k/traveltech-service/blob/main/Use%20Cases.md)
 
-### C4-диаграмма
+### Диаграммы последовательности
 
-### База данных
+### [C4-диаграмма](https://github.com/yn96k/traveltech-service/blob/main/C4-%D0%94%D0%B8%D0%B0%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B0.md)
+
+### Базы данных
 
 ## REST API
 
