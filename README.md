@@ -31,6 +31,4 @@
 
 ### [Базы данных](https://github.com/yn96k/traveltech-service/tree/main/%D0%91%D0%B0%D0%B7%D1%8B%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85)
 
-## REST API
-
-## Спецификации методов
+## [REST API](https://github.com/yn96k/traveltech-service/blob/main/Swagger-API%20спецификация.yaml)
