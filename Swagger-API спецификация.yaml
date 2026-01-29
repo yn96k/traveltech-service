@@ -1,0 +1,250 @@
+openapi: 3.0.3
+
+info:
+  title: TravelTech API
+  version: 1.0.0
+  description: API синхронизации данных и бронирования услуг
+
+paths:
+
+  /sync/batch:
+
+    post:
+      tags:
+        - Sync
+      summary: Отправка пакета изменений
+      description: Сохранение событий во внутреннее хранилище
+      operationId: syncBatch
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/X-Idempotency-Key'
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncBatchRequest'
+
+      responses:
+        200:
+          description: Пакет принят
+        400:
+          $ref: '#/components/responses/Error'
+        401:
+          $ref: '#/components/responses/Error'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /sync/resolution:
+
+    post:
+      tags:
+        - Sync
+      summary: Разрешение конфликта версий
+      description: Фиксация выбранной версии данных
+      operationId: resolveConflict
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/X-Idempotency-Key'
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolutionRequest'
+
+      responses:
+        200:
+          description: Резолюция принята
+        400:
+          $ref: '#/components/responses/Error'
+        500:
+          $ref: '#/components/responses/Error'
+
+  /bookings:
+
+    post:
+      tags:
+        - Booking
+      summary: Создать бронирование
+      description: Инициация Саги бронирования
+      operationId: createBooking
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/X-Idempotency-Key'
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+
+      responses:
+        200:
+          description: Процесс запущен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        400:
+          $ref: '#/components/responses/Error'
+        401:
+          $ref: '#/components/responses/Error'
+        500:
+          $ref: '#/components/responses/Error'
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    X-Idempotency-Key:
+      name: X-Idempotency-Key
+      in: header
+      required: true
+      description: Ключ идемпотентности
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Error:
+      description: Ответ с ошибкой
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+
+    Uuid:
+      type: string
+      format: uuid
+
+    DateTime:
+      type: string
+      format: date-time
+      example: '2026-01-28T10:00:00Z'
+
+    VersionVector:
+      type: object
+      description: Вектор логических часов
+      additionalProperties:
+        type: integer
+
+    EventTypeEnum:
+      type: string
+      enum: [CREATE_TRIP, UPDATE_TRIP, DELETE_TRIP, RESOLVE_CONFLICT]
+
+    ServiceCategoryEnum:
+      type: string
+      enum: [FLIGHT, HOTEL, TRANSFER, INSURANCE]
+
+    ProviderNameEnum:
+      type: string
+      enum: [AMADEUS, SABRE, BOOKING_COM, EXPEDIA, LOCAL_PROVIDER]
+
+    SyncBatchRequest:
+      type: object
+      required: [deviceId, events]
+      properties:
+        deviceId:
+          $ref: '#/components/schemas/Uuid'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncEvent'
+
+    SyncEvent:
+      type: object
+      required: [eventId, type, payload, versionVector]
+      properties:
+        eventId:
+          $ref: '#/components/schemas/Uuid'
+        tripId:
+          $ref: '#/components/schemas/Uuid'
+        type:
+          $ref: '#/components/schemas/EventTypeEnum'
+        versionVector:
+          $ref: '#/components/schemas/VersionVector'
+        payload:
+          type: object
+
+    ResolutionRequest:
+      type: object
+      required: [conflictId, selectedEvent]
+      properties:
+        conflictId:
+          $ref: '#/components/schemas/Uuid'
+        selectedEvent:
+          $ref: '#/components/schemas/SyncEvent'
+
+    CreateBookingRequest:
+      type: object
+      required: [tripId, items]
+      properties:
+        tripId:
+          $ref: '#/components/schemas/Uuid'
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/BookingItem'
+
+    BookingItem:
+      type: object
+      required: [providerName, providerItemId, category, encryptedPassengerData]
+      properties:
+        referenceId:
+          $ref: '#/components/schemas/Uuid'
+        providerName:
+          $ref: '#/components/schemas/ProviderNameEnum'
+        category:
+          $ref: '#/components/schemas/ServiceCategoryEnum'
+        providerItemId:
+          type: string
+          example: "OFFER-123-ABC"
+        encryptedPassengerData:
+          type: string
+          description: Зашифрованные персональные данные
+
+    BookingResponse:
+      type: object
+      required: [bookingId, status]
+      properties:
+        bookingId:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          example: "PENDING"
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+
+    ErrorResponse:
+      type: object
+      required: [errorId, errorCode, errorMessage]
+      properties:
+        errorId:
+          type: string
+          minLength: 16
+          maxLength: 16
+          example: "02d58bace05e461f"
+        errorCode:
+          type: string
+          maxLength: 50
+          example: "VersionConflict"
+        errorMessage:
+          type: string
+          example: "Конфликт версий данных"
+        errorDetails:
+          type: object
